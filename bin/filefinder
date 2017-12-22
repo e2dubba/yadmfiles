@@ -1,0 +1,50 @@
+#!/usr/bin/env python3
+
+import subprocess as sp
+import easyproc as ep
+import os
+
+FILELIST = open('/home/sgoodwin/.fileslist')
+
+def fileselector():
+    file_dict = {}
+    fileslist = ep.grab(['find', '/mnt/cifs/sgoodwin/files', 
+        '/home/sgoodwin/Downloads/', '/mnt/cifs/sgoodwin/ScholComm', '-name', '*'])
+    for line in fileslist:
+       head, tail = os.path.split(line)
+       file_dict[tail] = head
+
+    file_list = '\n'.join([x for x in file_dict.keys()])
+    sel = ep.run('dmenu -l 10 -i -nb #29091E -nf #ffffff -sb #843E64 -sf #000000', input=file_list, stdout=sp.PIPE).stdout
+    sel = str(sel)
+    print(sel)
+    ext = os.path.splitext(sel.strip())[1]
+    filename = file_dict[sel]+'/'+sel.strip()
+    print(sel)
+    print(ext == '.pdf')
+    print(os.path.splitext(sel))
+    runcmd = ['i3-sensible-terminal', '-e', 'ranger', filename]
+    print(runcmd)
+    if ext in ['.ods', '.xlsx', '.xls', '.doc', '.docx']:
+        runcmd = ['libreoffice', filename]
+    if ext in ['.docx', '.odt']:
+        os.chdir(file_dict[sel])
+        runcmd = ['officeopen', sel]
+    if ext in ['.pdf', '.djvu']:
+        runcmd = ['zathura', filename]
+    if ext in ['.adoc', '.txt', '.asciidoc', '.md', '.py', '.js', '.j']:
+        runcmd = ['i3-sensible-terminal', '-e', 'nvim', filename]
+    if not ext:
+        runcmd = ['i3-sensible-terminal', '-e', 'ranger', file_dict[sel]]
+
+    ep.run(runcmd)
+
+
+def main():
+
+    fileselector()
+
+
+if __name__ == '__main__':
+    import argparse
+    main()
